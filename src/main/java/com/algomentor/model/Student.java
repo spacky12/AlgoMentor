@@ -37,6 +37,9 @@ public class Student {
     @NotBlank(message = "Section is required")
     @Column(name = "section", nullable = false)
     private String section;
+
+    @Column(name = "student_group")
+    private String group;
     
     @Column(name = "created_at")
     private LocalDateTime createdAt;
@@ -146,6 +149,14 @@ public class Student {
     
     public void setSection(String section) {
         this.section = section;
+    }
+
+    public String getGroup() {
+        return group;
+    }
+
+    public void setGroup(String group) {
+        this.group = group;
     }
     
     public LocalDateTime getCreatedAt() {

@@ -11,11 +11,11 @@ const AnalyticsDashboard = ({ problems, studentData }) => {
     const difficultyData = useMemo(() => {
         let easy = 0, medium = 0, hard = 0;
 
-        // Prefer stats from studentData if available (more accurate for total counts)
+        // Use stats from studentData if available
         if (studentData) {
-            easy = (studentData.hackerRankEasy || 0) + (studentData.leetCodeEasy || 0);
-            medium = (studentData.hackerRankMedium || 0) + (studentData.leetCodeMedium || 0);
-            hard = (studentData.hackerRankHard || 0) + (studentData.leetCodeHard || 0);
+            easy = studentData.leetCodeEasy || 0;
+            medium = studentData.leetCodeMedium || 0;
+            hard = studentData.leetCodeHard || 0;
         }
 
         // Fallback to counting problems list if stats are 0 (e.g. before sync)
@@ -29,49 +29,13 @@ const AnalyticsDashboard = ({ problems, studentData }) => {
         }
 
         return [
-            { name: 'Easy', value: easy, color: '#00b894' },   // Green
-            { name: 'Medium', value: medium, color: '#fdcb6e' }, // Orange
-            { name: 'Hard', value: hard, color: '#d63031' }     // Red
+            { name: 'Easy', value: easy, color: '#6b7280' },      // Medium gray
+            { name: 'Medium', value: medium, color: '#9ca3af' },   // Light gray
+            { name: 'Hard', value: hard, color: '#1f2937' }        // Dark gray
         ].filter(d => d.value > 0);
     }, [problems, studentData]);
 
-    // 2. Platform Breakdown (Bar Chart)
-    const platformData = useMemo(() => {
-        let hr = 0, lc = 0;
 
-        if (studentData) {
-            hr = studentData.hackerRankTotal || 0;
-            lc = studentData.leetCodeTotal || 0;
-        }
-
-        return [
-            { name: 'HackerRank', count: hr, fill: '#2ecc71' },
-            { name: 'LeetCode', count: lc, fill: '#f39c12' }
-        ];
-    }, [studentData]);
-
-    // 3. Activity Timeline (Area Chart) - Mocked logic or derived from solvedAt
-    // Since we might not have historical data for every problem from the API stats,
-    // we will try to use the 'problems' list 'solvedAt' if available, otherwise 
-    // we might generate a dummy trend for visual appeal or show "Recent Activity"
-    const activityData = useMemo(() => {
-        // Group problems by date
-        const dates = {};
-        const sortedProblems = [...problems].sort((a, b) => new Date(a.solvedAt) - new Date(b.solvedAt));
-
-        if (sortedProblems.length === 0) return [];
-
-        sortedProblems.forEach(p => {
-            if (!p.solvedAt) return;
-            const date = p.solvedAt.split('T')[0]; // YYYY-MM-DD
-            dates[date] = (dates[date] || 0) + 1;
-        });
-
-        return Object.keys(dates).map(date => ({
-            date,
-            solved: dates[date]
-        }));
-    }, [problems]);
 
     // 4. Last 10 Submissions
     const latestSubmissions = useMemo(() => {
@@ -81,7 +45,7 @@ const AnalyticsDashboard = ({ problems, studentData }) => {
     }, [problems]);
 
     // Check if we have any data to show
-    const hasData = (studentData && (studentData.hackerRankTotal > 0 || studentData.leetCodeTotal > 0)) || problems.length > 0;
+    const hasData = (studentData && studentData.leetCodeTotal > 0) || problems.length > 0;
 
     if (!hasData) {
         return (
@@ -89,126 +53,206 @@ const AnalyticsDashboard = ({ problems, studentData }) => {
                 <h2 className="section-title">📊 visual analytics</h2>
                 <div className="empty-chart-state" style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8', background: 'white', borderRadius: '0.75rem', border: '1px solid #e2e8f0' }}>
                     <p style={{ fontSize: '1.25rem', marginBottom: '1rem' }}>📉 No data to visualize yet</p>
-                    <p style={{ fontSize: '0.9rem' }}>Click <strong>"Sync Progress"</strong> to fetch your latest stats from HackerRank and LeetCode.</p>
+                    <p style={{ fontSize: '0.9rem' }}>Click <strong>"Sync Progress"</strong> to fetch your latest stats from LeetCode.</p>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="analytics-dashboard">
-            <h2 className="section-title">📊 visual analytics</h2>
+        <div style={{
+            maxHeight: '450px',
+            overflowY: 'auto',
+            paddingRight: '0.5rem'
+        }}>
+            <div className="analytics-dashboard">
+                <h2 className="section-title" style={{ position: 'sticky', top: 0, background: 'white', zIndex: 10, paddingBottom: '0.5rem' }}>📊 Visual Analytics</h2>
 
-            <div className="charts-container">
-                {/* Card 1: Difficulty Distribution */}
-                <div className="chart-card">
-                    <h3>Difficulty Mastery</h3>
-                    <div className="chart-wrapper">
-                        <ResponsiveContainer width="100%" height={250}>
-                            <PieChart>
-                                <Pie
-                                    data={difficultyData}
-                                    cx="50%"
-                                    cy="50%"
-                                    innerRadius={60}
-                                    outerRadius={80}
-                                    paddingAngle={5}
-                                    dataKey="value"
-                                >
-                                    {difficultyData.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={entry.color} />
-                                    ))}
-                                </Pie>
-                                <Tooltip />
-                                <Legend />
-                            </PieChart>
-                        </ResponsiveContainer>
+                {/* Stat Cards */}
+                <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(4, 1fr)',
+                    gap: '0.5rem',
+                    marginBottom: '1rem'
+                }}>
+                    <div style={{
+                        background: 'linear-gradient(135deg, hsl(0, 0%, 20%) 0%, hsl(0, 0%, 30%) 100%)',
+                        padding: '0.75rem',
+                        borderRadius: '0.5rem',
+                        color: 'white',
+                        textAlign: 'center'
+                    }}>
+                        <div style={{ fontSize: '1.25rem', fontWeight: '700', marginBottom: '0.125rem' }}>
+                            {studentData?.leetCodeTotal || 0}
+                        </div>
+                        <div style={{ fontSize: '0.7rem', opacity: 0.9 }}>Total Solved</div>
+                    </div>
+
+                    <div style={{
+                        background: 'white',
+                        padding: '0.75rem',
+                        borderRadius: '0.5rem',
+                        border: '1.5px solid hsl(0, 0%, 85%)',
+                        textAlign: 'center'
+                    }}>
+                        <div style={{ fontSize: '1.25rem', fontWeight: '700', marginBottom: '0.125rem', color: 'hsl(0, 0%, 40%)' }}>
+                            {studentData?.leetCodeEasy || 0}
+                        </div>
+                        <div style={{ fontSize: '0.7rem', color: 'hsl(0, 0%, 50%)' }}>Easy</div>
+                    </div>
+
+                    <div style={{
+                        background: 'white',
+                        padding: '0.75rem',
+                        borderRadius: '0.5rem',
+                        border: '1.5px solid hsl(0, 0%, 70%)',
+                        textAlign: 'center'
+                    }}>
+                        <div style={{ fontSize: '1.25rem', fontWeight: '700', marginBottom: '0.125rem', color: 'hsl(0, 0%, 35%)' }}>
+                            {studentData?.leetCodeMedium || 0}
+                        </div>
+                        <div style={{ fontSize: '0.7rem', color: 'hsl(0, 0%, 50%)' }}>Medium</div>
+                    </div>
+
+                    <div style={{
+                        background: 'white',
+                        padding: '0.75rem',
+                        borderRadius: '0.5rem',
+                        border: '1.5px solid hsl(0, 0%, 40%)',
+                        textAlign: 'center'
+                    }}>
+                        <div style={{ fontSize: '1.25rem', fontWeight: '700', marginBottom: '0.125rem', color: 'hsl(0, 0%, 20%)' }}>
+                            {studentData?.leetCodeHard || 0}
+                        </div>
+                        <div style={{ fontSize: '0.7rem', color: 'hsl(0, 0%, 50%)' }}>Hard</div>
                     </div>
                 </div>
 
-                {/* Card 2: Platform Breakdown */}
-                <div className="chart-card">
-                    <h3>Platform Dominance</h3>
-                    <div className="chart-wrapper">
-                        <ResponsiveContainer width="100%" height={250}>
-                            <BarChart data={platformData}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                                <XAxis dataKey="name" />
-                                <YAxis />
-                                <Tooltip cursor={{ fill: 'transparent' }} />
-                                <Bar dataKey="count" radius={[10, 10, 0, 0]}>
-                                    {platformData.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={entry.fill} />
-                                    ))}
-                                </Bar>
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
-
-                {/* Card 3: Activity Timeline (Only show if we have data) */}
-                {activityData.length > 0 && (
-                    <div className="chart-card full-width">
-                        <h3>Solving Velocity</h3>
+                {/* Difficulty Distribution Chart */}
+                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem' }}>
+                    {/* Difficulty Distribution Pie Chart */}
+                    <div className="chart-card">
+                        <h3>Difficulty Distribution</h3>
                         <div className="chart-wrapper">
-                            <ResponsiveContainer width="100%" height={250}>
-                                <AreaChart data={activityData}>
-                                    <defs>
-                                        <linearGradient id="colorSolved" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="#8884d8" stopOpacity={0.8} />
-                                            <stop offset="95%" stopColor="#8884d8" stopOpacity={0} />
-                                        </linearGradient>
-                                    </defs>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                                    <XAxis dataKey="date" />
-                                    <YAxis />
+                            <ResponsiveContainer width="100%" height={200}>
+                                <PieChart>
+                                    <Pie
+                                        data={difficultyData}
+                                        cx="50%"
+                                        cy="50%"
+                                        innerRadius={50}
+                                        outerRadius={70}
+                                        paddingAngle={5}
+                                        dataKey="value"
+                                    >
+                                        {difficultyData.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={entry.color} />
+                                        ))}
+                                    </Pie>
                                     <Tooltip />
-                                    <Area type="monotone" dataKey="solved" stroke="#8884d8" fillOpacity={1} fill="url(#colorSolved)" />
-                                </AreaChart>
+                                    <Legend />
+                                </PieChart>
                             </ResponsiveContainer>
                         </div>
                     </div>
-                )}
-            </div>
 
-            {/* Section 2: Recent Submissions Table */}
-            {latestSubmissions.length > 0 && (
-                <div className="submissions-section" style={{ marginTop: '2rem' }}>
-                    <h3 style={{ marginBottom: '1rem', color: '#1e293b', fontSize: '1.1rem', fontWeight: '600' }}>🕒 Recent 10 Submissions</h3>
-                    <div className="table-responsive" style={{ background: 'white', borderRadius: '0.75rem', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                            <thead style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                                <tr>
-                                    <th style={{ padding: '1rem' }}>Problem Title</th>
-                                    <th style={{ padding: '1rem' }}>Platform</th>
-                                    <th style={{ padding: '1rem' }}>Difficulty</th>
-                                    <th style={{ padding: '1rem' }}>Solved Date</th>
+                    {/* Summary Stats */}
+                    <div className="chart-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '1.5rem' }}>
+                        <h3 style={{ marginBottom: '1rem', fontSize: '1rem' }}>Progress Summary</h3>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span style={{ fontSize: '0.95rem', color: 'hsl(0, 0%, 40%)' }}>Easy Problems:</span>
+                                <span style={{ fontSize: '1.25rem', fontWeight: '600', color: 'hsl(0, 0%, 45%)' }}>
+                                    {studentData?.leetCodeEasy || 0}
+                                </span>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span style={{ fontSize: '0.95rem', color: 'hsl(0, 0%, 35%)' }}>Medium Problems:</span>
+                                <span style={{ fontSize: '1.25rem', fontWeight: '600', color: 'hsl(0, 0%, 35%)' }}>
+                                    {studentData?.leetCodeMedium || 0}
+                                </span>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span style={{ fontSize: '0.95rem', color: 'hsl(0, 0%, 20%)' }}>Hard Problems:</span>
+                                <span style={{ fontSize: '1.25rem', fontWeight: '600', color: 'hsl(0, 0%, 20%)' }}>
+                                    {studentData?.leetCodeHard || 0}
+                                </span>
+                            </div>
+                            <div style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                marginTop: '0.5rem',
+                                paddingTop: '1rem',
+                                borderTop: '2px solid hsl(0, 0%, 90%)'
+                            }}>
+                                <span style={{ fontSize: '1.1rem', fontWeight: '600', color: 'hsl(0, 0%, 20%)' }}>Total:</span>
+                                <span style={{ fontSize: '1.5rem', fontWeight: '700', color: 'hsl(0, 0%, 15%)' }}>
+                                    {studentData?.leetCodeTotal || 0}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Recent Activity Table */}
+                <div className="chart-card" style={{ padding: '1rem' }}>
+                    <h3 style={{ marginBottom: '1rem', fontSize: '1rem' }}>Recent Activity (Last 10)</h3>
+                    <div style={{ overflowX: 'auto' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                            <thead>
+                                <tr style={{ borderBottom: '2px solid #f1f5f9', textAlign: 'left' }}>
+                                    <th style={{ padding: '0.5rem', color: '#64748b' }}>Date</th>
+                                    <th style={{ padding: '0.5rem', color: '#64748b' }}>Title</th>
+                                    <th style={{ padding: '0.5rem', color: '#64748b' }}>Platform</th>
+                                    <th style={{ padding: '0.5rem', color: '#64748b' }}>Status</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {latestSubmissions.map((sub, idx) => (
-                                    <tr key={sub.id || idx} style={{ borderBottom: idx === latestSubmissions.length - 1 ? 'none' : '1px solid #f1f5f9' }}>
-                                        <td style={{ padding: '1rem', fontWeight: '500' }}>{sub.title}</td>
-                                        <td style={{ padding: '1rem' }}>
-                                            <span className="badge badge-platform" style={{ padding: '0.25rem 0.5rem', borderRadius: '4px', fontSize: '0.75rem', background: '#e0f2fe', color: '#0369a1' }}>
-                                                {sub.platform}
-                                            </span>
-                                        </td>
-                                        <td style={{ padding: '1rem' }}>
-                                            <span className={`badge badge-difficulty ${sub.difficulty.toLowerCase()}`}>
-                                                {sub.difficulty}
-                                            </span>
-                                        </td>
-                                        <td style={{ padding: '1rem', color: '#64748b', fontSize: '0.85rem' }}>
-                                            {new Date(sub.solvedAt).toLocaleDateString()}
+                                {latestSubmissions.length > 0 ? (
+                                    latestSubmissions.map((prob, idx) => (
+                                        <tr key={idx} style={{ borderBottom: '1px solid #f8fafc' }}>
+                                            <td style={{ padding: '0.5rem', color: '#334155' }}>
+                                                {new Date(prob.solvedAt).toLocaleDateString()}
+                                            </td>
+                                            <td style={{ padding: '0.5rem', fontWeight: '500', color: '#0f172a' }}>
+                                                {prob.title}
+                                            </td>
+                                            <td style={{ padding: '0.5rem' }}>
+                                                <span className={`badge badge-platform`} style={{ fontSize: '0.7rem' }}>
+                                                    {prob.platform}
+                                                </span>
+                                            </td>
+                                            <td style={{ padding: '0.5rem' }}>
+                                                <span
+                                                    style={{
+                                                        display: 'inline-block',
+                                                        width: '8px',
+                                                        height: '8px',
+                                                        borderRadius: '50%',
+                                                        backgroundColor: prob.status === 'solved' ? '#10b981' : '#f59e0b',
+                                                        marginRight: '6px'
+                                                    }}
+                                                ></span>
+                                                <span style={{ color: prob.status === 'solved' ? '#059669' : '#d97706' }}>
+                                                    {prob.status === 'solved' ? 'Solved' : 'Attempted'}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    ))
+                                ) : (
+                                    <tr>
+                                        <td colSpan="4" style={{ padding: '1rem', textAlign: 'center', color: '#94a3b8' }}>
+                                            No recent activity found.
                                         </td>
                                     </tr>
-                                ))}
+                                )}
                             </tbody>
                         </table>
                     </div>
                 </div>
-            )}
+
+            </div>
         </div>
     );
 };

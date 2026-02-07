@@ -3,7 +3,14 @@ import axios from 'axios';
 import './App.css';
 import AnalyticsDashboard from './components/AnalyticsDashboard';
 
-const API_BASE_URL = 'http://localhost:8080/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080/api';
+
+// Valid section ranges matching signup form
+const VALID_SECTIONS = [
+  ...Array.from({ length: 20 }, (_, i) => (601 + i).toString()),
+  ...Array.from({ length: 20 }, (_, i) => (701 + i).toString()),
+  ...Array.from({ length: 20 }, (_, i) => (801 + i).toString())
+];
 
 // Configure axios to include JWT token in all requests
 axios.interceptors.request.use(
@@ -15,6 +22,18 @@ axios.interceptors.request.use(
     return config;
   },
   (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Add response interceptor for better error handling
+axios.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token');
+      window.location.href = '/login';
+    }
     return Promise.reject(error);
   }
 );
@@ -38,7 +57,7 @@ function App({ user, onLogout }) {
     email: '',
     rollNumber: '',
     section: '',
-    hackerProfile: '',
+    group: '',
     leetcodeProfile: ''
   });
 
@@ -104,6 +123,14 @@ function App({ user, onLogout }) {
       // Students can only see their own progress
       const response = await axios.get(`${API_BASE_URL}/progress/my-progress`);
       setProgressData([response.data]);
+
+      // IMPORTANT: Also update selectedStudent with the progress data so analytics show on refresh
+      if (response.data) {
+        setSelectedStudent(prevStudent => ({
+          ...prevStudent,
+          ...response.data
+        }));
+      }
     } catch (error) {
       console.error('Error loading progress data:', error);
       if (error.response?.status === 403 || error.response?.status === 401) {
@@ -232,7 +259,6 @@ function App({ user, onLogout }) {
       email: student.email,
       rollNumber: student.rollNumber || '',
       section: student.section || '',
-      hackerProfile: student.hackerrankProfile || '',
       leetcodeProfile: student.leetcodeProfile || ''
     });
     setShowStudentForm(true);
@@ -254,7 +280,7 @@ function App({ user, onLogout }) {
     setShowProblemForm(false);
     setEditingStudent(null);
     setEditingProblem(null);
-    setStudentForm({ name: '', email: '', hackerProfile: '' });
+    setStudentForm({ name: '', email: '', leetcodeProfile: '' });
     setProblemForm({ title: '', platform: '', difficulty: 'Easy', status: 'solved' });
   };
 
@@ -264,23 +290,28 @@ function App({ user, onLogout }) {
       return;
     }
 
-    if (!window.confirm('This will fetch data from HackerRank and LeetCode. Continue?')) {
+    // Check if student has LeetCode profile configured
+    const student = students.find(s => s.id === studentId);
+    if (student && !student.leetcodeProfile) {
+      alert('Please configure your LeetCode username in your profile first.\n\nClick "Edit Profile" to add your username.');
       return;
     }
 
-    setFetchingHackerRank(true); // Reusing state variable for simplicity, or rename it
+    if (!window.confirm('This will fetch data from LeetCode. Continue?')) {
+      return;
+    }
+
+    setFetchingHackerRank(true);
     try {
-      // Use the sync-all endpoint from ProgressController
       const response = await axios.post(`${API_BASE_URL}/progress/sync-all/${studentId}`, {}, {
-        timeout: 60000 // 60 second timeout as it scrapes two sites
+        timeout: 60000
       });
 
       const data = response.data;
-      alert(`Successfully synced progress!\nTotal Problems: ${data.totalProblems}\nHackerRank: ${data.hackerRankTotal}\nLeetCode: ${data.leetCodeTotal}`);
+      alert(`Successfully synced progress!\nTotal Problems: ${data.totalProblems}\nLeetCode: ${data.leetCodeTotal}`);
 
-      // Reload updated data
       if (selectedStudent?.id === studentId) {
-        setSelectedStudent(data); // Update with new stats for charts
+        setSelectedStudent(data);
         loadProblems(studentId);
       }
       loadStats();
@@ -339,21 +370,6 @@ function App({ user, onLogout }) {
             </button>
           </div>
 
-          {stats && !showProgressTable && (
-            <div className="stats-card">
-              <h2>Statistics</h2>
-              <div className="stats-grid">
-                <div className="stat-item">
-                  <span className="stat-label">Total Students</span>
-                  <span className="stat-value">{stats.totalStudents}</span>
-                </div>
-                <div className="stat-item">
-                  <span className="stat-label">Total Problems</span>
-                  <span className="stat-value">{stats.totalProblems}</span>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
 
         {showProgressTable ? (
@@ -371,9 +387,7 @@ function App({ user, onLogout }) {
                     <th>Name</th>
                     <th>Roll No.</th>
                     <th>Section</th>
-                    <th colSpan="4">HackerRank</th>
                     <th colSpan="4">LeetCode</th>
-                    <th colSpan="4">Total</th>
                   </tr>
                   <tr className="sub-header">
                     <th></th>
@@ -383,20 +397,12 @@ function App({ user, onLogout }) {
                     <th>Easy</th>
                     <th>Medium</th>
                     <th>Hard</th>
-                    <th>Total</th>
-                    <th>Easy</th>
-                    <th>Medium</th>
-                    <th>Hard</th>
-                    <th>Total</th>
-                    <th>Easy</th>
-                    <th>Medium</th>
-                    <th>Hard</th>
                   </tr>
                 </thead>
                 <tbody>
                   {progressData.length === 0 ? (
                     <tr>
-                      <td colSpan="15" style={{ textAlign: 'center', padding: '2rem' }}>
+                      <td colSpan="7" style={{ textAlign: 'center', padding: '2rem' }}>
                         No progress data available. Sync your profiles to see progress.
                       </td>
                     </tr>
@@ -406,18 +412,10 @@ function App({ user, onLogout }) {
                         <td>{progress.studentName}</td>
                         <td>{progress.rollNumber || 'N/A'}</td>
                         <td>{progress.section || 'N/A'}</td>
-                        <td className="number-cell">{progress.hackerRankTotal}</td>
-                        <td className="number-cell easy">{progress.hackerRankEasy}</td>
-                        <td className="number-cell medium">{progress.hackerRankMedium}</td>
-                        <td className="number-cell hard">{progress.hackerRankHard}</td>
-                        <td className="number-cell">{progress.leetCodeTotal}</td>
+                        <td className="number-cell total">{progress.leetCodeTotal}</td>
                         <td className="number-cell easy">{progress.leetCodeEasy}</td>
                         <td className="number-cell medium">{progress.leetCodeMedium}</td>
                         <td className="number-cell hard">{progress.leetCodeHard}</td>
-                        <td className="number-cell total">{progress.totalProblems}</td>
-                        <td className="number-cell easy">{progress.easyProblems}</td>
-                        <td className="number-cell medium">{progress.mediumProblems}</td>
-                        <td className="number-cell hard">{progress.hardProblems}</td>
                       </tr>
                     ))
                   )}
@@ -457,20 +455,39 @@ function App({ user, onLogout }) {
                       onChange={(e) => setStudentForm({ ...studentForm, rollNumber: e.target.value })}
                       required
                     />
-                    <input
-                      type="text"
-                      placeholder="Section"
+                    <select
+                      name="section"
                       value={studentForm.section}
                       onChange={(e) => setStudentForm({ ...studentForm, section: e.target.value })}
                       required
-                    />
-                    <input
-                      type="text"
-                      placeholder="HackerRank Username"
-                      value={studentForm.hackerProfile}
-                      onChange={(e) => setStudentForm({ ...studentForm, hackerProfile: e.target.value })}
-                      required
-                    />
+                      style={{
+                        width: '100%',
+                        padding: '0.75rem 1rem',
+                        border: '1px solid var(--border-light)',
+                        borderRadius: 'var(--radius-md)',
+                        marginBottom: 'var(--spacing-md)',
+                        fontSize: '0.875rem',
+                        background: 'var(--surface)',
+                        fontFamily: 'Inter, sans-serif'
+                      }}
+                    >
+                      <option value="">Select Section</option>
+                      <optgroup label="600 Series">
+                        {VALID_SECTIONS.slice(0, 20).map(sec => (
+                          <option key={sec} value={sec}>{sec}</option>
+                        ))}
+                      </optgroup>
+                      <optgroup label="700 Series">
+                        {VALID_SECTIONS.slice(20, 40).map(sec => (
+                          <option key={sec} value={sec}>{sec}</option>
+                        ))}
+                      </optgroup>
+                      <optgroup label="800 Series">
+                        {VALID_SECTIONS.slice(40, 60).map(sec => (
+                          <option key={sec} value={sec}>{sec}</option>
+                        ))}
+                      </optgroup>
+                    </select>
                     <input
                       type="text"
                       placeholder="LeetCode Username"
@@ -502,9 +519,6 @@ function App({ user, onLogout }) {
                         <p className="student-email">{student.email}</p>
                         <p className="student-profile">Roll Number: {student.rollNumber || 'N/A'}</p>
                         <p className="student-profile">Section: {student.section || 'N/A'}</p>
-                        {student.hackerrankProfile && (
-                          <p className="student-profile">HackerRank: {student.hackerrankProfile}</p>
-                        )}
                         {student.leetcodeProfile && (
                           <p className="student-profile">LeetCode: {student.leetcodeProfile}</p>
                         )}
@@ -560,36 +574,46 @@ function App({ user, onLogout }) {
                     </div>
                   </div>
 
-                  {/* Analytics Dashboard */}
-                  <AnalyticsDashboard problems={problems} studentData={selectedStudent} />
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', alignItems: 'start' }}>
+                    {/* Left Column: Visual Analytics */}
+                    <AnalyticsDashboard problems={problems} studentData={selectedStudent} />
 
-                  {/* Manual problem adding form removed as per requirements */}
+                    {/* Manual problem adding form removed as per requirements */}
 
-                  <div className="problems-list">
-                    {problems.length === 0 ? (
-                      <p className="empty-state">No problems yet. Add one to get started!</p>
-                    ) : (
-                      problems.map(problem => (
-                        <div key={problem.id} className="problem-card">
-                          <div className="problem-info">
-                            <h3>{problem.title}</h3>
-                            <div className="problem-details">
-                              <span className="badge badge-platform">{problem.platform}</span>
-                              <span className={`badge badge-difficulty ${problem.difficulty.toLowerCase()}`}>
-                                {problem.difficulty}
-                              </span>
-                              <span className={`badge badge-status ${problem.status}`}>
-                                {problem.status.replace('_', ' ')}
-                              </span>
+                    {/* Right Column: Problems List */}
+                    <div style={{
+                      maxHeight: '450px',
+                      overflowY: 'auto',
+                      paddingRight: '0.5rem'
+                    }}>
+                      <h2 className="section-title" style={{ position: 'sticky', top: 0, background: 'white', zIndex: 10, paddingBottom: '0.5rem', marginBottom: '0.75rem' }}>📝 Problems</h2>
+                      <div className="problems-list">
+                        {problems.length === 0 ? (
+                          <p className="empty-state">No problems yet. Add one to get started!</p>
+                        ) : (
+                          problems.map(problem => (
+                            <div key={problem.id} className="problem-card">
+                              <div className="problem-info">
+                                <h3>{problem.title}</h3>
+                                <div className="problem-details">
+                                  <span className="badge badge-platform">{problem.platform}</span>
+                                  <span className={`badge badge-difficulty ${problem.difficulty.toLowerCase()}`}>
+                                    {problem.difficulty}
+                                  </span>
+                                  <span className={`badge badge-status ${problem.status}`}>
+                                    {problem.status.replace('_', ' ')}
+                                  </span>
+                                </div>
+                                <p className="problem-date">
+                                  Solved: {new Date(problem.solvedAt).toLocaleDateString()}
+                                </p>
+                              </div>
+                              {/* Manual edit/delete actions removed */}
                             </div>
-                            <p className="problem-date">
-                              Solved: {new Date(problem.solvedAt).toLocaleDateString()}
-                            </p>
-                          </div>
-                          {/* Manual edit/delete actions removed */}
-                        </div>
-                      ))
-                    )}
+                          ))
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </>
               ) : (

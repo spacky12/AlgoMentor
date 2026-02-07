@@ -42,15 +42,10 @@ public class AuthService {
                 return new AuthResponse("Email already exists");
             }
 
-            // Normalize role early
-            String requestedRole = request.getRole();
-            if (requestedRole == null || requestedRole.isEmpty()) {
-                requestedRole = "STUDENT";
-            } else {
-                requestedRole = requestedRole.toUpperCase();
-            }
+            // Force role to STUDENT
+            String requestedRole = "STUDENT";
             
-            if ("STUDENT".equals(requestedRole) && request.getRollNumber() != null && !request.getRollNumber().trim().isEmpty() && studentRepository.existsByRollNumber(request.getRollNumber())) {
+            if (request.getRollNumber() != null && !request.getRollNumber().trim().isEmpty() && studentRepository.existsByRollNumber(request.getRollNumber())) {
                 logger.warn("Signup failed: Roll number already exists - {}", request.getRollNumber());
                 return new AuthResponse("Roll number already exists");
             }
@@ -74,6 +69,7 @@ public class AuthService {
                 student.setLeetcodeProfile(request.getLeetcodeProfile() != null && !request.getLeetcodeProfile().trim().isEmpty() 
                     ? request.getLeetcodeProfile() : null);
                 student.setSection(request.getSection());
+                student.setGroup(request.getGroup());
                 student.setUser(user);
                 student = studentRepository.save(student);
                 logger.info("Student created with ID: {}", student.getId());

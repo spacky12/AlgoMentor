@@ -78,6 +78,53 @@ public class TeacherController {
         return ResponseEntity.ok(new SyncResult(synced, failed, "Synced " + synced + " students, " + failed + " failed"));
     }
     
+    @Autowired
+    private com.algomentor.service.ReportService reportService;
+
+    /**
+     * Export section data as CSV
+     */
+    @GetMapping("/section/{section}/export/csv")
+    public ResponseEntity<byte[]> exportSectionCSV(@PathVariable String section) {
+        try {
+            List<Student> students = studentRepository.findBySection(section);
+            List<com.algomentor.dto.StudentProgressDTO> studentDTOs = students.stream()
+                    .map(progressTrackingService::getStudentProgress)
+                    .collect(Collectors.toList());
+            
+            byte[] csvBytes = reportService.generateStudentProgressCSV(studentDTOs);
+            
+            return ResponseEntity.ok()
+                    .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=section_" + section + "_progress.csv")
+                    .contentType(org.springframework.http.MediaType.parseMediaType("text/csv"))
+                    .body(csvBytes);
+        } catch (java.io.IOException e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /**
+     * Export section data as PDF
+     */
+    @GetMapping("/section/{section}/export/pdf")
+    public ResponseEntity<byte[]> exportSectionPDF(@PathVariable String section) {
+        try {
+            List<Student> students = studentRepository.findBySection(section);
+            List<com.algomentor.dto.StudentProgressDTO> studentDTOs = students.stream()
+                    .map(progressTrackingService::getStudentProgress)
+                    .collect(Collectors.toList());
+            
+            byte[] pdfBytes = reportService.generateStudentProgressPDF(studentDTOs, section);
+            
+            return ResponseEntity.ok()
+                    .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=section_" + section + "_progress.pdf")
+                    .contentType(org.springframework.http.MediaType.APPLICATION_PDF)
+                    .body(pdfBytes);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+    
     private static class SyncResult {
         @SuppressWarnings("unused")
         private int synced;

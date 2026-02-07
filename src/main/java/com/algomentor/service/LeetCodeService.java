@@ -30,7 +30,7 @@ public class LeetCodeService {
             String cleanUsername = extractUsername(username);
             String url = "https://leetcode.com/graphql";
             
-            String query = "{\"query\":\"query userPublicProfile($username: String!) { matchedUser(username: $username) { username submitStats: submitStatsGlobal { acSubmissionNum { difficulty count } } } recentSubmissionList(username: $username, limit: 15) { title titleSlug timestamp statusDisplay lang } }\",\"variables\":{\"username\":\"" + cleanUsername + "\"}}";
+            String query = "{\"query\":\"query userPublicProfile($username: String!) { matchedUser(username: $username) { username submitStats: submitStatsGlobal { acSubmissionNum { difficulty count } } } recentSubmissionList(username: $username, limit: 20) { title titleSlug timestamp statusDisplay lang } }\",\"variables\":{\"username\":\"" + cleanUsername + "\"}}";
             
             RestTemplate restTemplate = new RestTemplate();
             HttpHeaders headers = new HttpHeaders();

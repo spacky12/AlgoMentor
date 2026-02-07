@@ -50,6 +50,7 @@ public class ProgressTrackingService {
         progress.setEmail(student.getEmail());
         progress.setRollNumber(student.getRollNumber());
         progress.setSection(student.getSection());
+        progress.setGroup(student.getGroup());
         progress.setHackerrankProfile(student.getHackerrankProfile());
         progress.setLeetcodeProfile(student.getLeetcodeProfile());
         

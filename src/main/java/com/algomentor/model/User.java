@@ -6,7 +6,7 @@ import jakarta.validation.constraints.NotBlank;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "users")
+@Table(name = "app_users")
 public class User {
     
     @Id
@@ -23,7 +23,7 @@ public class User {
     private String password;
     
     @NotBlank(message = "Role is required")
-    @Column(nullable = false)
+    @Column(name = "user_role", nullable = false)
     private String role; // "STUDENT" or "TEACHER"
     
     @Column(name = "created_at")

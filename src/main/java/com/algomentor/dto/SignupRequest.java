@@ -2,10 +2,13 @@ package com.algomentor.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.Pattern;
 
 public class SignupRequest {
     
     @NotBlank(message = "Name is required")
+    @Size(min = 2, max = 100, message = "Name must be between 2 and 100 characters")
     private String name;
     
     @NotBlank(message = "Email is required")
@@ -13,6 +16,7 @@ public class SignupRequest {
     private String email;
     
     @NotBlank(message = "Password is required")
+    @Size(min = 6, message = "Password must be at least 6 characters long")
     private String password;
     
     private String rollNumber;
@@ -21,6 +25,7 @@ public class SignupRequest {
     private String leetcodeProfile;
     
     private String section;
+    private String group;
     
     private String role; // "STUDENT" or "TEACHER"
     
@@ -81,6 +86,14 @@ public class SignupRequest {
     
     public void setSection(String section) {
         this.section = section;
+    }
+
+    public String getGroup() {
+        return group;
+    }
+
+    public void setGroup(String group) {
+        this.group = group;
     }
 
     public String getRole() {

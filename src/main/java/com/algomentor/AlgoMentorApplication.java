@@ -19,13 +19,14 @@ public class AlgoMentorApplication {
 	@Bean
 	public CommandLineRunner dataLoader(UserRepository userRepository, PasswordEncoder passwordEncoder) {
 		return args -> {
-			if (!userRepository.existsByEmail("teacher@algomentor.com")) {
-				User teacher = new User();
-				teacher.setEmail("teacher@algomentor.com");
-				teacher.setPassword(passwordEncoder.encode("teacher123"));
-				teacher.setRole("TEACHER");
-				userRepository.save(teacher);
-				System.out.println("Seeded default teacher: teacher@algomentor.com / teacher123");
+			// Create default admin account for easy login
+			if (!userRepository.existsByEmail("admin@algomentor.com")) {
+				User admin = new User();
+				admin.setEmail("admin@algomentor.com");
+				admin.setPassword(passwordEncoder.encode("admin"));
+				admin.setRole("TEACHER");
+				userRepository.save(admin);
+				System.out.println("✅ Default admin account created - Username: admin@algomentor.com, Password: admin");
 			}
 		};
 	}

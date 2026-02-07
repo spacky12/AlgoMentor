@@ -69,6 +69,26 @@ function TeacherDashboard({ onLogout }) {
     }
   };
 
+  const handleExport = async (format) => {
+    if (!selectedSection) return;
+    try {
+      const response = await axios.get(
+        `${API_BASE_URL}/teacher/section/${encodeURIComponent(selectedSection)}/export/${format}`,
+        { responseType: 'blob' }
+      );
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `section_${selectedSection}_progress.${format}`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      console.error('Export error:', error);
+      alert(`Error exporting ${format.toUpperCase()}. Please try again.`);
+    }
+  };
+
   const handleSyncAll = async () => {
     if (!selectedSection) {
       alert('Please select a section first');
@@ -112,7 +132,7 @@ function TeacherDashboard({ onLogout }) {
       <div className="container">
         <div className="section-selector">
           <h2>Select Section</h2>
-          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
             <select
               value={selectedSection}
               onChange={(e) => setSelectedSection(e.target.value)}
@@ -125,13 +145,29 @@ function TeacherDashboard({ onLogout }) {
               ))}
             </select>
             {selectedSection && (
-              <button
-                className="btn btn-primary"
-                onClick={handleSyncAll}
-                disabled={syncing}
-              >
-                {syncing ? 'Syncing...' : '🔄 Sync All Students'}
-              </button>
+              <>
+                <button
+                  className="btn btn-primary"
+                  onClick={handleSyncAll}
+                  disabled={syncing}
+                >
+                  {syncing ? 'Syncing...' : '🔄 Sync All Students'}
+                </button>
+                <div style={{ width: '1px', height: '40px', background: '#e0e0e0', margin: '0 0.5rem' }}></div>
+                <select
+                  className="export-select"
+                  onChange={(e) => {
+                    if (e.target.value) {
+                      handleExport(e.target.value);
+                      e.target.value = ""; // Reset selection
+                    }
+                  }}
+                >
+                  <option value="">Export To ⬇️</option>
+                  <option value="csv">CSV</option>
+                  <option value="pdf">PDF</option>
+                </select>
+              </>
             )}
           </div>
         </div>
@@ -156,25 +192,13 @@ function TeacherDashboard({ onLogout }) {
                 <table className="progress-table">
                   <thead>
                     <tr>
-                      <th>Roll No.</th>
-                      <th>Name</th>
-                      <th>Email</th>
-                      <th colSpan="4">HackerRank</th>
+                      <th rowSpan="2">Roll No.</th>
+                      <th rowSpan="2">Name</th>
+                      <th rowSpan="2">Email</th>
+                      <th rowSpan="2">Group</th>
                       <th colSpan="4">LeetCode</th>
-                      <th colSpan="4">Total</th>
                     </tr>
                     <tr className="sub-header">
-                      <th></th>
-                      <th></th>
-                      <th></th>
-                      <th>Total</th>
-                      <th>Easy</th>
-                      <th>Medium</th>
-                      <th>Hard</th>
-                      <th>Total</th>
-                      <th>Easy</th>
-                      <th>Medium</th>
-                      <th>Hard</th>
                       <th>Total</th>
                       <th>Easy</th>
                       <th>Medium</th>
@@ -187,18 +211,11 @@ function TeacherDashboard({ onLogout }) {
                         <td>{student.rollNumber || 'N/A'}</td>
                         <td>{student.studentName}</td>
                         <td>{student.email}</td>
-                        <td className="number-cell">{student.hackerRankTotal}</td>
-                        <td className="number-cell easy">{student.hackerRankEasy}</td>
-                        <td className="number-cell medium">{student.hackerRankMedium}</td>
-                        <td className="number-cell hard">{student.hackerRankHard}</td>
-                        <td className="number-cell">{student.leetCodeTotal}</td>
+                        <td>{student.group || '-'}</td>
+                        <td className="number-cell total">{student.leetCodeTotal}</td>
                         <td className="number-cell easy">{student.leetCodeEasy}</td>
                         <td className="number-cell medium">{student.leetCodeMedium}</td>
                         <td className="number-cell hard">{student.leetCodeHard}</td>
-                        <td className="number-cell total">{student.totalProblems}</td>
-                        <td className="number-cell easy">{student.easyProblems}</td>
-                        <td className="number-cell medium">{student.mediumProblems}</td>
-                        <td className="number-cell hard">{student.hardProblems}</td>
                       </tr>
                     ))}
                   </tbody>

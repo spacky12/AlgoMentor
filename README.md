@@ -1,17 +1,50 @@
 # AlgoMentor
 
-A full-stack Java application for tracking coding problems solved by students. The system allows you to manage student profiles and track their problem-solving progress across different platforms (HackerRank, LeetCode, etc.).
+A production-ready full-stack application for tracking coding problems solved by students. The system allows teachers to manage student profiles and track their problem-solving progress across different platforms (HackerRank, LeetCode, etc.) with automated data synchronization.
+
+## 🚀 Features
+
+### Core Functionality
+- **Student Management**: Create, read, update, and delete student profiles
+- **Problem Tracking**: Track problems solved across multiple platforms
+- **Automated Sync**: Fetch and sync data from HackerRank and LeetCode profiles
+- **Analytics Dashboard**: Visualize progress with interactive charts
+- **Progress Tracking**: Comprehensive breakdown by difficulty and platform
+- **Role-Based Access**: Separate interfaces for teachers and students
+
+### Security & Authentication
+- JWT-based authentication with secure token management
+- Role-based authorization (Teacher/Student)
+- Password strength validation
+- BCrypt password encryption
+- CORS configuration for production
+- Environment-based secret management
+
+### Production Features
+- PostgreSQL database support
+- Database migrations with Flyway
+- Comprehensive error handling
+- API documentation with Swagger/OpenAPI
+- Pagination and search functionality
+- Docker containerization
+- CI/CD pipeline with GitHub Actions
+- Comprehensive test coverage
 
 ## Tech Stack
 
 - **Backend**: Spring Boot 3.2.0, Java 17
-- **Database**: H2 (in-memory database)
+- **Database**: H2 (development), PostgreSQL (production)
 - **Frontend**: React 18
 - **Build Tool**: Maven
+- **Security**: Spring Security, JWT
+- **API Docs**: Swagger/OpenAPI
+- **Testing**: JUnit 5, Mockito
+- **CI/CD**: GitHub Actions
+- **Containerization**: Docker
 
 ## Prerequisites
 
-Before running the application, make sure you have the following installed:
+Before running the application, ensure you have:
 
 1. **Java 17 or higher**
    ```bash
@@ -29,74 +62,101 @@ Before running the application, make sure you have the following installed:
    npm -version
    ```
 
+4. **PostgreSQL 14+** (for production)
+   ```bash
+   psql --version
+   ```
+
+## Quick Start (Development)
+
+### 1. Clone the Repository
+```bash
+git clone https://github.com/yourusername/algomentor.git
+cd algomentor
+```
+
+### 2. Set Up Environment Variables
+```bash
+cp .env.example .env
+# Edit .env with your configuration
+```
+
+### 3. Start the Backend
+```bash
+mvn spring-boot:run
+```
+
+The backend will start on `http://localhost:8080`
+
+### 4. Start the Frontend
+```bash
+cd frontend
+npm install
+npm start
+```
+
+The frontend will start on `http://localhost:3000`
+
+### 5. Access the Application
+- **Frontend**: http://localhost:3000
+- **API Documentation**: http://localhost:8080/swagger-ui.html
+- **H2 Console** (dev only): http://localhost:8080/h2-console
+
+### Default Credentials
+- **Teacher Account**: 
+  - Email: `teacher@algomentor.com`
+  - Password: `teacher123`
+
+## Production Deployment
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) for comprehensive production deployment instructions including:
+- PostgreSQL setup
+- Environment configuration
+- Docker deployment
+- Nginx configuration
+- Security checklist
+- Monitoring setup
+
+## API Documentation
+
+Once the application is running, access the interactive API documentation at:
+- **Swagger UI**: http://localhost:8080/swagger-ui.html
+- **OpenAPI JSON**: http://localhost:8080/v3/api-docs
+
 ## Project Structure
 
 ```
 AlgoMentor/
 ├── src/
-│   └── main/
-│       ├── java/com/algomentor/
-│       │   ├── model/          # Entity classes (Student, Problem)
-│       │   ├── repository/     # JPA repositories
-│       │   ├── service/         # Business logic
-│       │   ├── controller/     # REST controllers
-│       │   └── dto/            # Data Transfer Objects
-│       └── resources/
-│           └── application.properties
+│   ├── main/
+│   │   ├── java/com/algomentor/
+│   │   │   ├── config/          # Security, CORS, OpenAPI config
+│   │   │   ├── controller/      # REST controllers
+│   │   │   ├── dto/             # Data Transfer Objects
+│   │   │   ├── exception/       # Global exception handling
+│   │   │   ├── model/           # Entity classes
+│   │   │   ├── repository/      # JPA repositories
+│   │   │   ├── security/        # JWT authentication
+│   │   │   ├── service/         # Business logic
+│   │   │   └── util/            # Utility classes
+│   │   └── resources/
+│   │       ├── application.properties
+│   │       ├── application-prod.properties
+│   │       └── db/migration/    # Flyway migrations
+│   └── test/                    # Unit and integration tests
 ├── frontend/
 │   ├── src/
+│   │   ├── components/          # React components
 │   │   ├── App.js
-│   │   ├── App.css
-│   │   └── index.js
-│   └── package.json
+│   │   └── App.css
+│   ├── Dockerfile
+│   └── nginx.conf
+├── .github/workflows/           # CI/CD pipelines
+├── Dockerfile                   # Backend Docker config
+├── docker-compose.yml
+├── DEPLOYMENT.md
 └── pom.xml
 ```
-
-## Setup and Running
-
-### Step 1: Start the Backend (Spring Boot)
-
-1. Navigate to the project root directory:
-   ```bash
-   cd /Volumes/Private/PROJECTS/AlgoMentor
-   ```
-
-2. Build and run the Spring Boot application:
-   ```bash
-   mvn spring-boot:run
-   ```
-
-   Or if you prefer to build first and then run:
-   ```bash
-   mvn clean install
-   java -jar target/algomentor-1.0.0.jar
-   ```
-
-3. The backend will start on `http://localhost:8080`
-
-4. You can access the H2 database console at `http://localhost:8080/h2-console`
-   - JDBC URL: `jdbc:h2:mem:algomentor`
-   - Username: `sa`
-   - Password: (leave empty)
-
-### Step 2: Start the Frontend (React)
-
-1. Open a new terminal window and navigate to the frontend directory:
-   ```bash
-   cd /Volumes/Private/PROJECTS/AlgoMentor/frontend
-   ```
-
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-3. Start the React development server:
-   ```bash
-   npm start
-   ```
-
-4. The frontend will start on `http://localhost:3000` and automatically open in your browser.
 
 ## API Endpoints
 

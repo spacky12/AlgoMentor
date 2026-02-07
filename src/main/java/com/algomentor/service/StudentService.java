@@ -1,9 +1,12 @@
 package com.algomentor.service;
 
 import com.algomentor.dto.StudentDTO;
+import com.algomentor.exception.ResourceNotFoundException;
 import com.algomentor.model.Student;
 import com.algomentor.repository.StudentRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,9 +26,15 @@ public class StudentService {
                 .collect(Collectors.toList());
     }
     
+    public Page<StudentDTO> searchStudents(String search, Pageable pageable) {
+        return studentRepository.findByNameContainingIgnoreCaseOrEmailContainingIgnoreCaseOrRollNumberContainingIgnoreCase(
+                search, search, search, pageable)
+                .map(this::convertToDTO);
+    }
+    
     public StudentDTO getStudentById(Long id) {
         Student student = studentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Student not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Student not found with id: " + id));
         return convertToDTO(student);
     }
     

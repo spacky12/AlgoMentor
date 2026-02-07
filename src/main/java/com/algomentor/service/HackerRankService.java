@@ -88,7 +88,7 @@ public class HackerRankService {
             );
             
             // Fetch recent challenges
-            String recentUrl = "https://www.hackerrank.com/rest/hackers/" + cleanUsername + "/recent_challenges?limit=15";
+            String recentUrl = "https://www.hackerrank.com/rest/hackers/" + cleanUsername + "/recent_challenges?limit=20";
             try {
                 @SuppressWarnings("unchecked")
                 ResponseEntity<Map<String, Object>> recentResponse = (ResponseEntity<Map<String, Object>>) (ResponseEntity<?>) restTemplate.exchange(

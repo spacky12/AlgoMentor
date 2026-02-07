@@ -6,6 +6,7 @@ public class StudentProgressDTO {
     private String email;
     private String rollNumber;
     private String section;
+    private String group;
     private String hackerrankProfile;
     private String leetcodeProfile;
     
@@ -68,6 +69,14 @@ public class StudentProgressDTO {
     
     public void setSection(String section) {
         this.section = section;
+    }
+
+    public String getGroup() {
+        return group;
+    }
+
+    public void setGroup(String group) {
+        this.group = group;
     }
     
     public String getHackerrankProfile() {

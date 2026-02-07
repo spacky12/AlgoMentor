@@ -7,6 +7,10 @@ import com.algomentor.service.StudentService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -26,11 +30,27 @@ public class StudentController {
     private StudentRepository studentRepository;
     
     /**
-     * Get all students (TEACHER ONLY)
+     * Get all students with pagination (TEACHER ONLY)
      */
     @GetMapping
     @PreAuthorize("hasAuthority('ROLE_TEACHER')")
-    public ResponseEntity<List<StudentDTO>> getAllStudents() {
+    public ResponseEntity<?> getAllStudents(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "id") String sortBy,
+            @RequestParam(required = false) String search) {
+        
+        if (page < 0 || size <= 0 || size > 100) {
+            return ResponseEntity.badRequest().body("Invalid pagination parameters");
+        }
+        
+        Pageable pageable = PageRequest.of(page, size, Sort.by(sortBy));
+        
+        if (search != null && !search.trim().isEmpty()) {
+            Page<StudentDTO> students = studentService.searchStudents(search, pageable);
+            return ResponseEntity.ok(students);
+        }
+        
         List<StudentDTO> students = studentService.getAllStudents();
         return ResponseEntity.ok(students);
     }

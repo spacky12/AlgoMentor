@@ -1,12 +1,28 @@
 package com.algomentor.dto;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import java.time.LocalDateTime;
 
 public class ProblemDTO {
     private Long id;
+    
+    @NotBlank(message = "Title is required")
     private String title;
+    
+    @NotBlank(message = "Platform is required")
+    @Pattern(regexp = "^(HackerRank|LeetCode|CodeForces|CodeChef|AtCoder|Other)$", 
+             message = "Platform must be one of: HackerRank, LeetCode, CodeForces, CodeChef, AtCoder, Other")
     private String platform;
+    
+    @NotBlank(message = "Difficulty is required")
+    @Pattern(regexp = "^(EASY|MEDIUM|HARD)$", 
+             message = "Difficulty must be one of: EASY, MEDIUM, HARD")
     private String difficulty;
+    
+    @NotBlank(message = "Status is required")
+    @Pattern(regexp = "^(SOLVED|IN_PROGRESS|FAILED)$", 
+             message = "Status must be one of: SOLVED, IN_PROGRESS, FAILED")
     private String status;
     private LocalDateTime solvedAt;
     private Long studentId;

@@ -40,6 +40,8 @@ public class SecurityConfig {
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
+                .requestMatchers("/h2-console/**").permitAll()
                 .requestMatchers("/api/teacher/**").hasAnyAuthority("ROLE_TEACHER")
                 .requestMatchers("/api/progress/all").hasAnyAuthority("ROLE_TEACHER")
                 .anyRequest().authenticated()

@@ -134,15 +134,75 @@ public class ProgressController {
      * Sync both HackerRank and LeetCode progress for a student
      */
     @PostMapping("/sync-all/{studentId}")
-    public ResponseEntity<?> syncAllProgress(@PathVariable Long studentId) {
+    public ResponseEntity<?> syncAllProgress(@PathVariable Long studentId, HttpServletRequest request) {
         try {
-            progressTrackingService.syncHackerRankProgress(studentId);
-            progressTrackingService.syncLeetCodeProgress(studentId);
+            String userEmail = (String) request.getAttribute("userEmail");
+            String userRole = (String) request.getAttribute("userRole");
+            
+            if (userEmail == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(new ErrorResponse("Unauthorized"));
+            }
+            
+            // Students can only sync their own progress
+            if ("STUDENT".equals(userRole)) {
+                Student student = studentRepository.findByEmail(userEmail)
+                        .orElseThrow(() -> new RuntimeException("Student not found"));
+                if (!student.getId().equals(studentId)) {
+                    return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                            .body(new ErrorResponse("You can only sync your own progress"));
+                }
+            }
+            
+            // Get student to check profiles
+            Student student = studentRepository.findById(studentId)
+                    .orElseThrow(() -> new RuntimeException("Student not found"));
+            
+            boolean hasHackerRank = student.getHackerrankProfile() != null && !student.getHackerrankProfile().trim().isEmpty();
+            boolean hasLeetCode = student.getLeetcodeProfile() != null && !student.getLeetcodeProfile().trim().isEmpty();
+            
+            if (!hasHackerRank && !hasLeetCode) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(new ErrorResponse("Please configure your HackerRank and/or LeetCode username in your profile first"));
+            }
+            
+            StringBuilder successMsg = new StringBuilder();
+            StringBuilder errorMsg = new StringBuilder();
+            
+            // Try HackerRank if configured
+            if (hasHackerRank) {
+                try {
+                    progressTrackingService.syncHackerRankProgress(studentId);
+                    successMsg.append("HackerRank synced successfully. ");
+                } catch (Exception e) {
+                    errorMsg.append("HackerRank: ").append(e.getMessage()).append(". ");
+                }
+            }
+            
+            // Try LeetCode if configured
+            if (hasLeetCode) {
+                try {
+                    progressTrackingService.syncLeetCodeProgress(studentId);
+                    successMsg.append("LeetCode synced successfully. ");
+                } catch (Exception e) {
+                    errorMsg.append("LeetCode: ").append(e.getMessage()).append(". ");
+                }
+            }
+            
+            // Get updated progress
             StudentProgressDTO progress = progressTrackingService.getAllStudentsProgress().stream()
                     .filter(p -> p.getStudentId().equals(studentId))
                     .findFirst()
                     .orElseThrow(() -> new RuntimeException("Student not found"));
-            return ResponseEntity.ok(progress);
+            
+            // If we have any success, return the progress
+            if (successMsg.length() > 0) {
+                return ResponseEntity.ok(progress);
+            } else {
+                // All failed
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(new ErrorResponse("Sync failed: " + errorMsg.toString()));
+            }
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(new ErrorResponse("Error syncing progress: " + e.getMessage()));
