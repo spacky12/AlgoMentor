@@ -28,7 +28,7 @@ jobs:
       run: mvn clean package -DskipTests
     
     - name: Upload artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: backend-jar
         path: target/*.jar
@@ -60,7 +60,7 @@ jobs:
       run: npm run build
     
     - name: Upload artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: frontend-build
         path: frontend/build
